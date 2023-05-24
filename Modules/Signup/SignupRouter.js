@@ -179,7 +179,15 @@ SignupRouter.post('/login',  (req, res) => {
                     bcrypt.compare(password, user.password)
                     .then((result) => {
                         if (result){
-                            res.status(200).json({message: "Login Successful", data: {username: user.username, email: user.email, birthdate: user.birthdate}});
+                            let token = jwt.sign(
+                                {
+                                    id: user.id,
+                                    email: user.email,
+                                },
+                                process.env.JWTLoginTokenSecret,
+                                { expiresIn: "1h" }
+                              );
+                            res.status(200).json({message: "Login Successful", data: {username: user.username, email: user.email, birthdate: user.birthdate, token: token, id: user.id}});
                         }else {
                             res.status(400).json({ message: "Incorrect password."});
                         }

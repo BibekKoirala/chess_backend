@@ -32,7 +32,7 @@ function checkToken(req, res, next) {
         .status(401)
         .json({ success: false, message: "Error! Token was not provided." });
     }
-    const decodedToken = jwt.verify(token, "secretkeyappearshere");
+    const decodedToken = jwt.verify(token, process.env.JWTExpiryTokenSecret);
     res
       .status(200)
       .json({
