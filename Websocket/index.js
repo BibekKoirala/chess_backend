@@ -11,6 +11,8 @@ const game = {
 const action = {
   Online: "Online",
   Draw_Offered: "Draw_Offered",
+  Draw_Accepted: "Draw_Accepted",
+  Draw_Rejected: "Draw_Rejected",
   Illegal_Move: "Illegal_Move",
   Opponent_Move: "Opponent_Move",
   Opponent_Left: "Opponent_Left",
@@ -53,6 +55,7 @@ class Game {
     this.chess = new Chess();
     this.format = "Rapid";
     this.time = 10;
+    this.drawid = null;
     this.start();
   }
 
@@ -361,6 +364,33 @@ class Game {
     );
     ws.gameid = this.token;
   }
+
+  drawOffered(id) {
+    this.drawid = id;
+    if (id == this.player1.id) {
+      this.player2.send(WSMessage(action.Draw_Offered, this.player1.username + " offered a draw?"))
+    }
+    else if (id == this.player2.id) {
+      this.player1.send(WSMessage(action.Draw_Offered, this.player2.username + " offered a draw?"))
+    }
+    return;
+  }
+
+  drawAccepted(id) {
+    if ((this.drawid == this.player1.id && id == this.player2.id) || (this.drawid == this.player2.id && id == this.player1.id)) {
+      this.end(true, null, action.Draw_Accepted, "Game drawn  by mutual acceptance", null)
+    } else {
+      this.drawid = null
+    }
+    return
+  }
+
+  drawRejected(id) {
+    this.drawid = null;
+    this.player1.send(WSMessage(action.Draw_Rejected, "Draw rejected."));
+    this.player2.send(WSMessage(action.Draw_Rejected, "Draw rejected."));
+    return;
+  }
 }
 
 function CreateGameToken(player1, player2, gametime = 10) {
@@ -475,6 +505,7 @@ function WebsocketHandler(ws) {
             } else {
               if (payload.id == message.payload.id) {
                 ws.id = payload.id;
+                ws.username = message.payload.username;
                 ws.isPlaying = false;
                 let searchList = game.online.filter((wss) => wss.id != ws.id);
                 if (searchList.length < game.online.length) {
@@ -507,11 +538,36 @@ function WebsocketHandler(ws) {
         break;
       }
       case action.Draw_Offered: {
+        if (ws.gameid) {
+          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          if (tempgame.length > 0) {
+            tempgame[0].drawOffered(ws.id);
+          }
+        }
+        break;
+      }
+      case action.Draw_Accepted: {
+        if (ws.gameid) {
+          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          if (tempgame.length > 0) {
+            tempgame[0].drawAccepted(ws.id);
+          }
+        }
+        break;
+      }
+      case action.Draw_Rejected: {
+        if (ws.gameid) {
+          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          if (tempgame.length > 0) {
+            tempgame[0].drawRejected(ws.id);
+          }
+        }
+        break;
       }
     }
   });
 
-  ws.on("close", (code, reason) => {
+  ws.on("close", () => {
     console.log(ws);
     game.online = game.online.filter((wss) => wss.id !== ws.id);
     game.search = game.search.filter((wss) => wss.id !== ws.id);
