@@ -686,8 +686,7 @@ function WebsocketHandler(ws) {
       })
     }
 
-    // console.log(game);
-    
+    console.log(game);
   });
 }
 
