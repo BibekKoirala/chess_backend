@@ -7,14 +7,15 @@ var emailReGex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 
 
 function authHandler(req, res, next) {
-  if (preLoginRoutes.includes(req.url.toLowerCase().slice(1))) {
+  const URL = req.url.endsWith('/') ? req.url.toLowerCase().slice(1, req.url.length -1) :req.url.toLowerCase().slice(1);
+  if (preLoginRoutes.includes(URL)) {
     if (req.headers.hasOwnProperty("pl") && req.headers.pl === "T") {
       next();
     } else {
       res.status(401).json({ message: "Unauthorized" });
     }
-  } else if (secureRoutes.includes(req.url.toLowerCase().slice(1))) {
-    if (req.headers.hasOwnProperty("PL") && req.headers.PL === "F") {
+  } else if (secureRoutes.includes(URL)) {
+    if (req.headers.hasOwnProperty("pl") && req.headers.pl === "F") {
       checkToken(req, res, next);
     } else {
       res.status(401).json({ message: "Unauthorized" });
@@ -32,13 +33,18 @@ function checkToken(req, res, next) {
         .status(401)
         .json({ success: false, message: "Error! Token was not provided." });
     }
-    const decodedToken = jwt.verify(token, process.env.JWTExpiryTokenSecret);
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: { userId: decodedToken.userId, email: decodedToken.email },
-      });
+    jwt.verify(
+      token, process.env.JWTLoginTokenSecret,
+      (err, decodedToken) => {
+        if (err) {
+          res.status(401).json({message: 'Unauthorized'});
+          return
+        }
+
+        req.userId = decodedToken.id;
+        req.email = decodedToken.email;
+        next();
+      })
   }
 }
 
@@ -83,7 +89,7 @@ function GenerateExpiryLink (payload, uri,expirytime = '1h') {
     return process.env.PortalLink+ uri +'/'+token;
 }
 
-const secureRoutes = [];
+const secureRoutes = ["playergames", "setting"];
 const preLoginRoutes = ["signup", "register", "validatesignintoken", "createnewpassword", "login"];
 
 module.exports = { authHandler: authHandler, UserCriteria: UserCriteria, PasswordHasher: PasswordHasher, GenerateExpiryLink: GenerateExpiryLink };

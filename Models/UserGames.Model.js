@@ -4,15 +4,13 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
 
 const UserGamesSchema = new Schema({
-  player1: Schema.Types.ObjectId,
-  player2: Schema.Types.ObjectId,
-  format: String,
-  time: String,
-  history: [String],
-  finalPosition: String,
-  concludeby: String,
-  winner: Schema.Types.ObjectId,
-  createdon: Date,
+  player: Schema.Types.ObjectId,
+  opponent: { type: Schema.Types.ObjectId, ref: 'User' },
+  winner: Boolean,
+  draw: Boolean,
+  white: Boolean,
+  game: { type: Schema.Types.ObjectId, ref: 'Games' },
+  pointincrement: Number
 });
 
 const UserGamesModel = mongoose.model("UserGames", UserGamesSchema);
