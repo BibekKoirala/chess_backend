@@ -1,40 +1,16 @@
 const { Chess } = require("chess.js");
 const jwt = require("jsonwebtoken");
 const UserGamesModel = require("../Models/UserGames.Model");
+const GamesModel = require("../Models/Games.Model");
+const action = require('./actions')
 
-const game = {
-  search: [],
-  games: [],
+// Array of array for different games.
+// 0 -> Bullet 1 -> Blitz 2 -> Rapid 3 -> Classical
+
+var game = {
+  search: [[],[],[],[]],
+  games: [[],[],[],[]],
   online: [],
-};
-
-const action = {
-  Online: "Online",
-  Draw_Offered: "Draw_Offered",
-  Draw_Accepted: "Draw_Accepted",
-  Draw_Rejected: "Draw_Rejected",
-  Illegal_Move: "Illegal_Move",
-  Opponent_Move: "Opponent_Move",
-  Opponent_Left: "Opponent_Left",
-  Opponent_Inactive: "Opponent_Inactive",
-  Game_Started: "Game_Started",
-  Game_Over: "Game_Over",
-  Expired_Token: "Expired_Token",
-  Search: "Search",
-  Cancel_Search: "Cancel_Search",
-  Move: "Move",
-  Invalid_Request: "Invalid_Request",
-  Rejoin: "Rejoin",
-  Rejoin_Success: "Rejoin_Success",
-  Rejoin_Failure: "Rejoin_Failure",
-  Opponent_Rejoin: "Opponent_Rejoin",
-  In_Check: "In_Check",
-  Is_CheckMate: "Is_CheckMate",
-  Is_StaleMate: "Is_Stalemate",
-  Is_Draw: "Is_Draw",
-  Is_ThreeFold: "Is_ThreeFold",
-  Is_InsufficientMaterial: "Is_InsufficientMaterial",
-  Is_Abandoned: "Is_Abandoned",
 };
 
 const WSMessage = (action, message, payload) => {
@@ -44,7 +20,7 @@ const WSMessage = (action, message, payload) => {
 };
 
 class Game {
-  constructor(player1, player2) {
+  constructor(player1, player2, format) {
     this.token = CreateGameToken(player1.id, player2.id);
     this.player1 = player1;
     this.player2 = player2;
@@ -53,9 +29,27 @@ class Game {
 
     this.white = Math.floor(Math.random() * 2) + 1;
     this.chess = new Chess();
-    this.format = "Rapid";
-    this.time = 10;
     this.drawid = null;
+    if (format == 0) {
+      this.format = format;
+      this.time1 = 60;
+      this.time2 = 60;
+    }
+    else if (format == 1) {
+      this.format = format;
+      this.time1 = 300;
+      this.time2 = 300;
+    }
+    else if (format == 2) {
+      this.format = format;
+      this.time1 = 900;
+      this.time2 = 900;
+    }
+    else if (format == 3) {
+      this.format = format;
+      this.time1 = 2700;
+      this.time2 = 2700;
+    }
     this.start();
   }
 
@@ -181,36 +175,84 @@ class Game {
         })
       );
     }
+
+    this.interval = setInterval(()=>{
+     if ((this.chess.turn() == "w" && this.white === 1) ||
+      (this.chess.turn() == "b" && this.white !== 1)) {
+        this.time1 = this.time1 - 1;
+      }
+      else if ((this.chess.turn() == "w" && this.white === 2) ||
+      (this.chess.turn() == "b" && this.white !== 2)) {
+        this.time2 = this.time2 - 1;
+      }
+      this.player1.send(WSMessage(action.Game_Clock, "Clock info", {
+        ownclock: this.time1,
+        opponentclock: this.time2,
+      }))
+
+      this.player2.send(WSMessage(action.Game_Clock, "Clock info", {
+        ownclock: this.time2,
+        opponentclock: this.time1,
+      }))
+      if (this.time1 == 0) {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.end(false, this.player2.id, action.Is_TimeUp, "You {win} on time.", null);
+      }
+      else if (this.time2 == 0) {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.end(false, this.player1.id, action.Is_TimeUp, "You {win} on time.", null)
+      }
+    }, 1000)
   }
 
   end(draw, winid, reason, message, move) {
+    if (this.interval){
+      clearInterval(this.interval);
+    }
     if (draw) {
-      UserGamesModel.create({
-        player1: this.player1.id,
-        player2: this.player2.id,
+      GamesModel.create({
         format: this.format,
         time: this.time,
         history: this.chess.history(),
         finalPosition: this.chess.fen(),
         concludeby: reason,
-        winner: null,
         createdon: new Date(),
       })
-        .then(() => {
-          this.player1.send(
-            WSMessage(action.Game_Over, message, {
-              move: move,
-              reason: reason,
-              draw: true,
-            })
-          );
-          this.player2.send(
-            WSMessage(action.Game_Over, message, {
-              move: move,
-              reason: reason,
-              draw: true,
-            })
-          );
+      .then((val)=>{
+        UserGamesModel.insertMany([{
+          player: this.player1.id,
+          opponent: this.player2.id,
+          winner: null,
+          draw: true,
+          white: (this.white == 1),
+          game: val._id
+        },{
+          player: this.player2.id,
+          opponent: this.player1.id,
+          winner: null,
+          draw: true,
+          white: (this.white == 2),
+          game: val._id
+        }])
+          .then(() => {
+            this.player1.send(
+              WSMessage(action.Game_Over, message, {
+                move: move,
+                reason: reason,
+                draw: true,
+              })
+            );
+            this.player2.send(
+              WSMessage(action.Game_Over, message, {
+                move: move,
+                reason: reason,
+                draw: true,
+              }));
+      })
+      
+          
         })
         .catch((e) => {
           this.player1.send(
@@ -229,7 +271,7 @@ class Game {
           );
         });
 
-      game.games = game.games.filter((game) => game.token !== this.token);
+      game.games[this.format] = game.games[this.format].filter((game) => game.token !== this.token);
       this.player1.gameid = null;
       this.player2.gameid = null;
 
@@ -272,6 +314,43 @@ class Game {
       );
     }
 
+    GamesModel.create({
+      format: this.format,
+      time: this.time,
+      history: this.chess.history(),
+      finalPosition: this.chess.fen(),
+      concludeby: reason,
+      createdon: new Date(),
+    })
+    .then((val)=>{
+      UserGamesModel.insertMany([{
+        player: this.player1.id,
+        opponent: this.player2.id,
+        winner: (winid == this.player1.id),
+        draw: false,
+        white: (this.white == 1),
+        game: val._id
+      },{
+        player: this.player2.id,
+        opponent: this.player1.id,
+        winner: (winid == this.player2.id),
+        draw: false,
+        white: (this.white == 2),
+        game: val._id
+      }])
+      .then(() => {
+        return;
+      })
+      .catch((e) => {
+        console.log(e.message);
+      });
+    
+        
+      })
+      .catch((e) => {
+        console.log(e.message);
+      });
+
     UserGamesModel.create({
       player1: this.player1.id,
       player2: this.player2.id,
@@ -282,6 +361,7 @@ class Game {
       concludeby: reason,
       winner: winid,
       createdon: new Date(),
+      white: this.white == 1? this.player1.id: this.player2.id
     })
       .then(() => {
         return;
@@ -291,7 +371,7 @@ class Game {
       });
 
     /*** Filter game and set gameid to null ***/
-    game.games = game.games.filter((game) => game.token !== this.token);
+    game.games[this.format] = game.games[this.format].filter((game) => game.token !== this.token);
     this.player1.gameid = null;
     this.player2.gameid = null;
   }
@@ -391,6 +471,16 @@ class Game {
     this.player2.send(WSMessage(action.Draw_Rejected, "Draw rejected."));
     return;
   }
+
+  resign(id) {
+    if (id == this.player1.id) {
+      this.end(false, this.player2.id, action.Game_Resign, "You {win} by resignation.", null);
+    }
+    else if (id == this.player2.id) {
+      this.end(false, this.player1.id, action.Game_Resign, "You {win} by resignation.", null);
+    }
+    return
+  }
 }
 
 function CreateGameToken(player1, player2, gametime = 10) {
@@ -429,19 +519,24 @@ function WebsocketHandler(ws) {
             } else {
               if (payload.id == message.payload.id) {
                 // ws.id = payload.id
-                let searchList = game.search.filter((wss) => wss.id != ws.id);
-                if (searchList.length > 0) {
-                  let opponent = searchList.pop();
-                  let newgame = new Game(opponent, ws);
-                  game.search = game.search.filter(
-                    (wss) => wss.id !== opponent.id
-                  );
-                  game.games.push(newgame);
-                } else if (searchList.length < game.search.length) {
-                  ws.send(WSMessage(action.Search, "Searching for opponent."));
-                } else {
-                  game.search.push(ws);
-                  ws.send(WSMessage(action.Search, "Searching for opponent."));
+                if ([1,2,3,4].includes(message.payload.format)) {
+                  let searchList = game.search[message.payload.format].filter((wss) => wss.id != ws.id);
+                  if (searchList.length > 0) {
+                    let opponent = searchList.pop();
+                    let newgame = new Game(opponent, ws, message.payload.format);
+                    game.search[message.payload.format] = game.search[message.payload.format].filter(
+                      (wss) => wss.id !== opponent.id
+                    );
+                    game.games[message.payload.format].push(newgame);
+                  } else if (searchList.length < game.search[message.payload.format].length) {
+                    ws.send(WSMessage(action.Search, "Searching for opponent."));
+                  } else {
+                    game.search[message.payload.format].push(ws);
+                    ws.send(WSMessage(action.Search, "Searching for opponent."));
+                  }
+                }
+                else {
+                  ws.send(WSMessage(action.Cancel_Search, "Search cancelled."));
                 }
               } else {
                 ws.send(
@@ -458,17 +553,17 @@ function WebsocketHandler(ws) {
         break;
       }
       case action.Cancel_Search: {
-        game.search = game.search.filter(
+        game.search[message.payload.format] = game.search[message.payload.format].filter(
           (wss) => wss.id !== message.payload.id
         );
         ws.send(WSMessage(action.Cancel_Search, "Search cancelled."));
         break;
       }
       case action.Move: {
-        for (let index = 0; index < game.games.length; index++) {
-          const element = game.games[index].token;
+        for (let index = 0; index < game.games[message.payload.format].length; index++) {
+          const element = game.games[message.payload.format][index].token;
           if (element == message.payload.token) {
-            game.games[index].makeMove(
+            game.games[message.payload.format][index].makeMove(
               message.payload.move,
               message.payload.id
             );
@@ -478,7 +573,7 @@ function WebsocketHandler(ws) {
         break;
       }
       case action.Rejoin: {
-        let tempgame = game.games.filter(
+        let tempgame = game.games[message.payload.format].filter(
           (game) => game.token === message.payload.token
         );
         if (tempgame.length > 0) {
@@ -530,7 +625,7 @@ function WebsocketHandler(ws) {
       }
       case action.Opponent_Inactive: {
         if (ws.gameid) {
-          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          let tempgame = game.games[message.payload.format].filter((game) => game.token === ws.gameid);
           if (tempgame.length > 0) {
             tempgame[0].endByAbort(ws.id);
           }
@@ -539,7 +634,7 @@ function WebsocketHandler(ws) {
       }
       case action.Draw_Offered: {
         if (ws.gameid) {
-          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          let tempgame = game.games[message.payload.format].filter((game) => game.token === ws.gameid);
           if (tempgame.length > 0) {
             tempgame[0].drawOffered(ws.id);
           }
@@ -548,7 +643,7 @@ function WebsocketHandler(ws) {
       }
       case action.Draw_Accepted: {
         if (ws.gameid) {
-          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          let tempgame = game.games[message.payload.format].filter((game) => game.token === ws.gameid);
           if (tempgame.length > 0) {
             tempgame[0].drawAccepted(ws.id);
           }
@@ -557,9 +652,18 @@ function WebsocketHandler(ws) {
       }
       case action.Draw_Rejected: {
         if (ws.gameid) {
-          let tempgame = game.games.filter((game) => game.token === ws.gameid);
+          let tempgame = game.games[message.payload.format].filter((game) => game.token === ws.gameid);
           if (tempgame.length > 0) {
             tempgame[0].drawRejected(ws.id);
+          }
+        }
+        break;
+      }
+      case action.Game_Resign: {
+        if (ws.gameid) {
+          let tempgame = game.games[message.payload.format].filter((game) => game.token === ws.gameid);
+          if (tempgame.length > 0) {
+            tempgame[0].resign(ws.id);
           }
         }
         break;
@@ -568,14 +672,18 @@ function WebsocketHandler(ws) {
   });
 
   ws.on("close", () => {
-    console.log(ws);
     game.online = game.online.filter((wss) => wss.id !== ws.id);
-    game.search = game.search.filter((wss) => wss.id !== ws.id);
+    game.search.forEach((val, i)=>{
+      game.search[i] = val.filter((wss) => wss.id !== ws.id);
+    })
+    // game.search = game.search.filter((wss) => wss.id !== ws.id);
     if (ws.gameid) {
-      let tempgame = game.games.filter((game) => game.token === ws.gameid);
-      if (tempgame.length > 0) {
-        tempgame[0].playerleft(ws.id);
-      }
+      game.games.forEach((val, i)=>{
+        let tempgame = val.filter((game) => game.token === ws.gameid);
+        if (tempgame.length > 0) {
+          tempgame[0].playerleft(ws.id);
+        }
+      })
     }
 
     // console.log(game);

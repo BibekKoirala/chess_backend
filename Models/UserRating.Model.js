@@ -6,7 +6,7 @@ const UserRatingSchema = new Schema({
   user: Schema.Types.ObjectId,
   bullet: Number,
   blitz: Number,
-  Rapid: Number,
+  rapid: Number,
 });
 
 const UserRatingModel = mongoose.model("UserRating", UserRatingSchema);
