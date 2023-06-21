@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const EmailTemplateModel = require('../../Models/EmailTemplate.Model');
 const sendMail = require('../../emailconfig');
 const jwt = require('jsonwebtoken');
+const UserSettingModel = require('../../Models/UserSetting.Model');
 
 // Creating an instance of the express server
 const SignupRouter = express.Router();
@@ -147,6 +148,15 @@ SignupRouter.post('/createnewpassword', (req, res) => {
                             })
                             .catch((err) => {
                                 res.status(400).json({ message: err.message });
+                            })
+                            UserSettingModel.create({
+                                user: payload.id,
+                                against: 1,
+                                format: 1,
+                                difficulty: 1,
+                                playas: 'b',
+                            }).catch((err) => {
+                                console.log(err);
                             })
                         }else {
                             res.status(400).json({ message: "User already activated." });

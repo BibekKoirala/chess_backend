@@ -6,6 +6,8 @@ const UserModel = require("../Models/User.Model");
 const morgan = require("morgan");
 const cors = require("cors");
 const authMiddleware = require("./Signup/authMiddleware");
+const GamesRouter = require("./Games/GamesRouter");
+const SettingsRouter = require("./GameSettings/SettingsRouter");
 // Creating an instance of the express server
 const app = express();
 
@@ -28,5 +30,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(SignupRouter);
+app.use(GamesRouter);
+app.use(SettingsRouter);
 
 module.exports = app;
