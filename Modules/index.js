@@ -8,10 +8,12 @@ const cors = require("cors");
 const authMiddleware = require("./Signup/authMiddleware");
 const GamesRouter = require("./Games/GamesRouter");
 const SettingsRouter = require("./GameSettings/SettingsRouter");
+const swaggerSetup = require("../swagger");
+const LoginRouter = require("./Signup/LoginRouter");
 // Creating an instance of the express server
 const app = express();
 
-app.use(express.json())
+app.use(express.json());
 
 // parse application/x-www-form-urlencoded
 // app.use(bodyParser.urlencoded({ extended: false }))
@@ -19,8 +21,17 @@ app.use(express.json())
 // parse application/json
 // app.use(bodyParser.json())
 app.use(cors());
-app.use(morgan('dev', { stream: { write: function(msg) { console.log(msg); } }}));
+app.use(
+  morgan("dev", {
+    stream: {
+      write: function (msg) {
+        console.log(msg);
+      },
+    },
+  })
+);
 app.use(authMiddleware.authHandler);
+
 /** For Database connection **/
 MongoConnection();
 
@@ -30,6 +41,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(SignupRouter);
+app.use(LoginRouter);
 app.use(GamesRouter);
 app.use(SettingsRouter);
 
