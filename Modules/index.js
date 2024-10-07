@@ -10,6 +10,7 @@ const GamesRouter = require("./Games/GamesRouter");
 const SettingsRouter = require("./GameSettings/SettingsRouter");
 const swaggerSetup = require("../swagger");
 const LoginRouter = require("./Signup/LoginRouter");
+const RatingRouter = require("./Rating/RatingRouter") 
 // Creating an instance of the express server
 const app = express();
 
@@ -44,5 +45,6 @@ app.use(SignupRouter);
 app.use(LoginRouter);
 app.use(GamesRouter);
 app.use(SettingsRouter);
+app.use(RatingRouter)
 
 module.exports = app;

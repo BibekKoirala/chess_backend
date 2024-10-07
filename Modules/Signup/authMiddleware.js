@@ -88,7 +88,7 @@ function GenerateExpiryLink(payload, uri, expirytime = "1h") {
   return process.env.PortalLink + uri + "/" + token;
 }
 
-const secureRoutes = ["playergames", "setting"];
+const secureRoutes = ["playergames", "setting", "ratings"];
 const preLoginRoutes = [
   "signup",
   "register",
