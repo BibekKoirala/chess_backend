@@ -124,3 +124,8 @@ Our app handles a variety of real-time game actions to make the online chess exp
 # 📁 Frontend
 
 Check out the frontend code for an interactive chess experience: [Chess Frontend.](https://github.com/BibekKoirala/chess_ui)
+
+![Node.js](https://img.shields.io/badge/Node.js-8CC84B?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![WebSockets](https://img.shields.io/badge/WebSockets-4FC3F7?style=for-the-badge&logo=websocket&logoColor=white)
