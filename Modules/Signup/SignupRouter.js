@@ -33,6 +33,7 @@ const UserModel = require('../../Models/User.Model');
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
 const UserSettingModel = require('../../Models/UserSetting.Model');
+const UserRatingModel = require('../../Models/UserRating.Model');
 
 // Creating an instance of the express server
 const SignupRouter = express.Router();
@@ -69,6 +70,16 @@ SignupRouter.post('/register', async (req, res) => {
                 format: 1,
                 difficulty: 1,
                 playas: 'b',
+            }).catch((err) => {
+                console.log(err);
+            })
+
+            UserRatingModel.create({
+                user: newUser._id,
+                blitz: 0,
+                bullet: 0,
+                rapid: 0,
+                classical: 0
             }).catch((err) => {
                 console.log(err);
             })

@@ -24,7 +24,6 @@ const options = {
 
 // Initialize swagger-jsdoc
 const swaggerSpec = swaggerJsdoc(options);
-console.log(swaggerSpec)
 
 module.exports = (app) => {
   // Serve Swagger docs

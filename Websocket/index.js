@@ -2,21 +2,20 @@ const { Chess } = require("chess.js");
 const jwt = require("jsonwebtoken");
 const UserGamesModel = require("../Models/UserGames.Model");
 const GamesModel = require("../Models/Games.Model");
-const action = require('./actions')
+const action = require('./actions');
+const UserRatingModel = require("../Models/UserRating.Model");
+const changePlayerRatings  = require("./RatingHandler");
+const WSMessage = require('./helpers/WSMessageFormatter');
+const { getUserRating } = require("../Modules/Rating/RatingActions");
 
 // Array of array for different games.
 // 0 -> Bullet 1 -> Blitz 2 -> Rapid 3 -> Classical
 
+var formatKey = ['bullet', 'blitz', 'rapid', 'classical']
 var game = {
   search: [[],[],[],[]],
   games: [[],[],[],[]],
   online: [],
-};
-
-const WSMessage = (action, message, payload) => {
-  return payload
-    ? JSON.stringify({ action: action, message: message, payload: payload })
-    : JSON.stringify({ action: action, message: message });
 };
 
 class Game {
@@ -175,6 +174,44 @@ class Game {
         })
       );
     }
+    
+    getUserRating(this.player1.id).then((val) =>{
+      if (val.success) {
+        this.player2.send(
+          WSMessage(
+            action.Opponent_Info, "Opponent Info", {
+              opponent_info: val.rating
+            }
+          )
+        )
+        this.player1.ratings = val.rating
+      }
+      else {
+        console.log('Unable to fetch Player Rating')
+      }
+    })
+    
+    getUserRating(this.player2.id)
+    .then((val) =>{
+      if (val.success) {
+        this.player1.send(
+          WSMessage(
+            action.Opponent_Info, "Opponent Info", {
+              opponent_info: val.rating
+            }
+          )
+        )
+        this.player2.ratings = val.rating
+      }
+      else {
+        console.log('Unable to fetch Player Rating')
+      }
+    })
+
+
+    // UserRatingModel.findOne({user: this.player1.id}).then((val)=> this.player1.ratings = val).catch(e=> console.log(e.message))
+    // UserRatingModel.findOne({user: this.player2.id}).then((val)=> this.player2.ratings = val).catch(e=> console.log(e.message))
+
 
     this.interval = setInterval(()=>{
      if ((this.chess.turn() == "w" && this.white === 1) ||
@@ -215,7 +252,7 @@ class Game {
       GamesModel.create({
         format: this.format,
         time: this.time,
-        history: this.chess.history(),
+        history: this.chess._history,
         finalPosition: this.chess.fen(),
         concludeby: reason,
         createdon: new Date(),
@@ -294,9 +331,15 @@ class Game {
           win: false,
         })
       );
+      console.log(this.player1.ratings)
+      changePlayerRatings(this.player1.id, this.player1.ratings[formatKey[this.format]], this.player2.ratings[formatKey[this.format]], true, this.format, this.player1, this.player2)
+      changePlayerRatings(this.player2.id, this.player2.ratings[formatKey[this.format]], this.player1.ratings[formatKey[this.format]], false, this.format, this.player2, this.player1)
+
     } else if (winid == this.player2.id) {
       let message1 = message.replace("{win}", "lost");
       let message2 = message.replace("{win}", "won");
+      changePlayerRatings(this.player1.id, this.player1.ratings[formatKey[this.format]], this.player2.ratings[formatKey[this.format]], false, this.format, this.player1, this.player2)
+      changePlayerRatings(this.player2.id, this.player2.ratings[formatKey[this.format]], this.player1.ratings[formatKey[this.format]], true, this.format, this.player2, this.player1)
 
       this.player1.send(
         WSMessage(action.Game_Over, message1, {
@@ -351,24 +394,6 @@ class Game {
         console.log(e.message);
       });
 
-    UserGamesModel.create({
-      player1: this.player1.id,
-      player2: this.player2.id,
-      format: this.format,
-      time: this.time,
-      history: this.chess.history(),
-      finalPosition: this.chess.fen(),
-      concludeby: reason,
-      winner: winid,
-      createdon: new Date(),
-      white: this.white == 1? this.player1.id: this.player2.id
-    })
-      .then(() => {
-        return;
-      })
-      .catch((e) => {
-        console.log(e.message);
-      });
 
     /*** Filter game and set gameid to null ***/
     game.games[this.format] = game.games[this.format].filter((game) => game.token !== this.token);
@@ -519,7 +544,7 @@ function WebsocketHandler(ws) {
             } else {
               if (payload.id == message.payload.id) {
                 // ws.id = payload.id
-                if ([1,2,3,4].includes(message.payload.format)) {
+                if ([0, 1, 2, 3].includes(message.payload.format)) {
                   let searchList = game.search[message.payload.format].filter((wss) => wss.id != ws.id);
                   if (searchList.length > 0) {
                     let opponent = searchList.pop();

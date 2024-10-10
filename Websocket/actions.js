@@ -28,6 +28,9 @@ const action = {
     Is_InsufficientMaterial: "Is_InsufficientMaterial",
     Is_Abandoned: "Is_Abandoned",
     Is_TimeUp: "Is_TimeUp",
+    Player_Rating: "Player_Rating",
+    Opponent_Rating: "Opponent_Rating",
+    Opponent_Info: "Opponent_Info"
   };
 
 module.exports = action;

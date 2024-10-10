@@ -6,9 +6,14 @@ var usernameReGex = /^[a-zA-Z0-9]*$/;
 var emailReGex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 
 function authHandler(req, res, next) {
-  const URL = req.url.endsWith("/")
+  let URL = req.url.endsWith("/")
     ? req.url.toLowerCase().slice(1, req.url.length - 1)
     : req.url.toLowerCase().slice(1);
+    
+    if (URL.includes(':')){
+      URL = URL.split('/')[0]
+    }
+    console.log(URL)
   if (preLoginRoutes.includes(URL)) {
     if (req.headers.hasOwnProperty("pl") && req.headers.pl === "T") {
       next();
@@ -88,7 +93,7 @@ function GenerateExpiryLink(payload, uri, expirytime = "1h") {
   return process.env.PortalLink + uri + "/" + token;
 }
 
-const secureRoutes = ["playergames", "setting"];
+const secureRoutes = ["playergames", "setting", "ratings"];
 const preLoginRoutes = [
   "signup",
   "register",
