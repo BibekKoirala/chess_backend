@@ -5,7 +5,8 @@ const GamesModel = require("../Models/Games.Model");
 const action = require('./actions');
 const UserRatingModel = require("../Models/UserRating.Model");
 const changePlayerRatings  = require("./RatingHandler");
-const WSMessage = require('./helpers/WSMessageFormatter')
+const WSMessage = require('./helpers/WSMessageFormatter');
+const { getUserRating } = require("../Modules/Rating/RatingActions");
 
 // Array of array for different games.
 // 0 -> Bullet 1 -> Blitz 2 -> Rapid 3 -> Classical
@@ -173,9 +174,43 @@ class Game {
         })
       );
     }
+    
+    getUserRating(this.player1.id).then((val) =>{
+      if (val.success) {
+        this.player2.send(
+          WSMessage(
+            action.Opponent_Info, "Opponent Info", {
+              opponent_info: val.rating
+            }
+          )
+        )
+        this.player1.ratings = val.rating
+      }
+      else {
+        console.log('Unable to fetch Player Rating')
+      }
+    })
+    
+    getUserRating(this.player2.id)
+    .then((val) =>{
+      if (val.success) {
+        this.player1.send(
+          WSMessage(
+            action.Opponent_Info, "Opponent Info", {
+              opponent_info: val.rating
+            }
+          )
+        )
+        this.player2.ratings = val.rating
+      }
+      else {
+        console.log('Unable to fetch Player Rating')
+      }
+    })
 
-    UserRatingModel.findOne({user: this.player1.id}).then((val)=> this.player1.ratings = val).catch(e=> console.log(e.message))
-    UserRatingModel.findOne({user: this.player2.id}).then((val)=> this.player2.ratings = val).catch(e=> console.log(e.message))
+
+    // UserRatingModel.findOne({user: this.player1.id}).then((val)=> this.player1.ratings = val).catch(e=> console.log(e.message))
+    // UserRatingModel.findOne({user: this.player2.id}).then((val)=> this.player2.ratings = val).catch(e=> console.log(e.message))
 
 
     this.interval = setInterval(()=>{
@@ -217,7 +252,7 @@ class Game {
       GamesModel.create({
         format: this.format,
         time: this.time,
-        history: this.chess.history(),
+        history: this.chess._history,
         finalPosition: this.chess.fen(),
         concludeby: reason,
         createdon: new Date(),
@@ -296,6 +331,7 @@ class Game {
           win: false,
         })
       );
+      console.log(this.player1.ratings)
       changePlayerRatings(this.player1.id, this.player1.ratings[formatKey[this.format]], this.player2.ratings[formatKey[this.format]], true, this.format, this.player1, this.player2)
       changePlayerRatings(this.player2.id, this.player2.ratings[formatKey[this.format]], this.player1.ratings[formatKey[this.format]], false, this.format, this.player2, this.player1)
 

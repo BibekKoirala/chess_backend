@@ -39,7 +39,7 @@ const updateUserRating = async (userId, bullet, blitz, rapid, classical) => {
 // Function to get a user's rating
 const getUserRating = async (userId) => {
   try {
-    const rating = await UserRatingModel.findOne({ user: userId });
+    const rating = await UserRatingModel.findOne({ user: userId }).populate({ path: 'user', select: '-password -activated -birthdate -createdon -__v'});
     if (!rating) {
       return { success: false, message: 'Rating not found for this user' };
     }

@@ -43,7 +43,7 @@ function changePlayerRatings(userid, playerRating, opponentRating, isWin, format
                 opponentRatingInc: newRating[formatKey[format]] - playerRating,
               })
         )
-    }).catch((e)=>console.log(e.message))
+    }).catch((e)=>console.log(e.message, 'From Rating Handler'))
 }
 
 module.exports = changePlayerRatings
