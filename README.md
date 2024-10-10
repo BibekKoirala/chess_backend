@@ -1,97 +1,126 @@
-# Chess Game Backend
+# ♟️ Online Chess App (Backend)
 
-This repository contains the backend implementation of a real-time multiplayer chess game. The backend is built using Node.js and utilizes WebSocket for real-time communication between players. The game supports various formats (Bullet, Blitz, Rapid, and Classical) and includes features such as move validation, game timers, and user management.
+Welcome to the backend of our feature-packed Online Chess App! This Node.js/Express-based backend powers multiplayer chess games, handles user authentication, and provides real-time updates through WebSockets.
 
-## Features
+⚠️ Note: This repository contains the backend portion of the project. You can find the frontend repository here: [Chess Frontend.](https://github.com/BibekKoirala/chess_ui)
 
-- **Real-time Gameplay**: Players can make moves, offer draws, and resign via WebSocket connections.
-- **Multiple Game Formats**: Supports Bullet, Blitz, Rapid, and Classical game formats with adjustable time controls.
-- **Game State Management**: Tracks game history, current state, and provides notifications for game events (checkmate, stalemate, etc.).
-- **User Management**: Handles user authentication and session management using JWT tokens.
-- **Game History Storage**: Saves completed game data in a database for future reference.
-- **Social Features**: Users can follow each other, send messages, and view friend lists.
-- **Settings Management**: Users can customize game settings, including board appearance, time controls, and notifications.
-- **Tournaments**: Organize and participate in tournaments with brackets and leaderboards.
-- **Statistics**: Track user performance, win/loss records, and game statistics.
+# 🚀 Features
 
-## Technologies Used
+* User Authentication & Authorization: Secure login and registration system using JWT (JSON Web Tokens).
+* REST APIs: Dynamic data fetching for game history, player ratings, and more.
+* WebSockets: Real-time, fast-paced multiplayer mode to challenge opponents online.
+* Multiplayer Game Actions: From draw offers to timeouts, we’ve got all the events that drive an exciting game!
 
-- **Node.js**: JavaScript runtime for building server-side applications.
-- **WebSocket**: For real-time communication between the server and clients.
-- **MongoDB**: Database to store user and game data.
-- **jsonwebtoken**: Library for generating and verifying JWT tokens.
-- **chess.js**: A chess library for move validation and game state management.
+### Single Player Mode: 
 
-## Installation
+Play against the renowned Stockfish5 Engine with difficulty levels:
+*   Easy 🟢
+*   Medium 🟡
+*   Hard 🔴
+    
+### Multiplayer Mode: 
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/chess-game-backend.git
-   cd chess-game-backend
+Play online with other chess enthusiasts in real time!
 
-2. Install the dependencies:
+**Player Ratings:** Track your progress in _Bullet, Blitz, Rapid, or Classical_ game modes.
+**Game History:** Review your past games and analyze your strategies.    
+**Player Options:**
+Resign when things get tough
+Offer and accept draws like a pro
+**Game Modes:**
+* Bullet ⚡
+* Blitz ⏱️
+* Rapid 🚀
+* Classical ♟️
+
+## 🎮 Demo Videos
+
+**Multiplayer Gameplay:** [Watch the demo video](https://drive.google.com/file/d/1l6Gs9EGftBd5Jxh1SXV29_ajzWuefdh-/view?usp=sharing)
+
+**Single Player Gameplay:** [Watch the demo video](https://drive.google.com/file/d/1GjrDIbY7MXg6tQU2z_-5gCy7jss9akGG/view?usp=sharing)
+
+## 🛠️ Technologies Used
+
+* Node.js: The runtime powering our server-side logic.
+* Express: For building fast and reliable RESTful APIs.
+* MongoDB: Flexible NoSQL database to store player info, game data, and ratings.
+* WebSockets: Seamless real-time communication for multiplayer games.
+
+## 🔄 Multiplayer Game Actions
+
+Our app handles a variety of real-time game actions to make the online chess experience immersive and interactive. These include:
+
+    Online: When a player goes online
+    Draw_Offered: A player offers a draw
+    Draw_Accepted: A draw offer is accepted
+    Draw_Rejected: A draw offer is rejected
+    Game_Resign: A player resigns from the game
+    Illegal_Move: An illegal move is made
+    Game_Clock: Tracks and updates the game clock
+    Opponent_Move: Opponent makes a move
+    Opponent_Left: Opponent leaves the game
+    Opponent_Inactive: Opponent is inactive for too long
+    Game_Started: The game starts
+    Game_Over: The game is over
+    Expired_Token: Token expiration detected
+    Search: Searching for a game
+    Cancel_Search: Cancels the game search
+    Move: Player makes a move
+    Invalid_Request: An invalid request is made
+    Rejoin: Player attempts to rejoin a game
+    Rejoin_Success: Successfully rejoined the game
+    Rejoin_Failure: Failed to rejoin the game
+    Opponent_Rejoin: Opponent rejoins the game
+    In_Check: Player is in check
+    Is_CheckMate: Checkmate is achieved
+    Is_StaleMate: Stalemate is reached
+    Is_Draw: The game ends in a draw
+    Is_ThreeFold: Threefold repetition occurs
+    Is_InsufficientMaterial: Insufficient material to continue
+    Is_Abandoned: Game is abandoned by a player
+    Is_TimeUp: Time runs out
+    Player_Rating: Player's rating is updated
+    Opponent_Rating: Opponent's rating is updated
+    Opponent_Info: Retrieve opponent's information
+
+# 💻 How to Run This Project
+
+### **Prerequisites**
+
+    Node.js (v14 or above)
+    MongoDB instance
+
+### **Steps to Run:**
+
+* Clone the Repository:
+    ```bash
+    git clone https://github.com/BibekKoirala/chess_backend.git
+    cd chess_backend
+* Install Dependencies:
     ```bash
     npm install
 
-3. Create a .env file in the root directory with the following variables:
-    ```plaintext
-    JWTLoginTokenSecret = your_secret_key
-    JWTExpiryTokenSecret = your_secret_key
-    JWTGameTokenSecret = your_secret_key
-    DBConnectionString= your_mongodb_uri
+* Configure Environment Variables:
 
-4. Start the server:
-    ```bash
-    npm start
+    Create a .env file in the root directory and add necessary environment variables:
 
-# API Endpoints
-## WebSocket Connection
+        env
 
-    Connect to the WebSocket server to begin a game and interact with other players.
-
-## Actions
-
-    Search: Search for an opponent based on the game format.
-    Cancel Search: Cancel the ongoing search for an opponent.
-    Move: Make a move in the current game.
-    Rejoin: Rejoin a previously started game.
-    Draw: Offer, accept, or reject a draw.
-    Resign: Resign from the current game.
-
-## Social Features
-
-    Follow: Follow other users to see their game activity.
-    Messaging: Send and receive messages from friends.
-    Friend List: View a list of friends and their online status.
-
-## Settings Management
-
-    Customize Board Appearance: Change themes and board colors.
-    Notification Settings: Manage notifications for game events and messages.
-
-## Tournaments
-
-    Create Tournament: Organize tournaments and set rules.
-    Join Tournament: Participate in existing tournaments.
-    Leaderboards: View tournament standings and individual player performance.
-
-## Statistics
-
-    Performance Tracking: View win/loss records and game statistics.
-    Game History: Access a history of played games and results.
-
-## Usage
-
-To use this backend service, connect to the WebSocket server from your front-end application and utilize the provided actions to manage game flow.
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue for any suggestions or improvements.
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-# Acknowledgments
-    chess.js - The chess library used for managing the game state.
-    jsonwebtoken - For token authentication.
+        PortalLink = FRONTEND_APP_URL
+        JWTLoginTokenSecret = JWT_TOKEN_SECRET
+        JWTExpiryTokenSecret = JWT_TOKEN_SECRET
+        JWTGameTokenSecret = JWT_TOKEN_SECRET
+        DBConnectionString= MONGO_DB_URL
 
 
-Feel free to modify any section to better reflect your project's actual capabilities or future goals!
+* Run the Server:
+    
+        npm start
+
+* Test the APIs:
+
+    You can use a tool like Postman or cURL to test the REST APIs and WebSockets, or use our [frontend application](https://github.com/BibekKoirala/chess_ui) for a fully interactive experience.
+
+# 📁 Frontend
+
+Check out the frontend code for an interactive chess experience: [Chess Frontend.](https://github.com/BibekKoirala/chess_ui)
